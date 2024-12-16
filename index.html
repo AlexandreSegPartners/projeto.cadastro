@@ -1,0 +1,148 @@
+<DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formulário de Proposta de Seguro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto mt-10 p-5 bg-white shadow-lg rounded-lg">
+        <h1 class="text-2xl font-bold text-center mb-5">Formulário de Proposta de Seguro</h1>
+        <form id="insuranceForm">
+            <div class="mb-4">
+                <label for="nomeCorretora" class="block text-gray-700">Nome da Corretora</label>
+                <input type="text" class="w-full p-2 border border-gray-300 rounded mt-1" id="nomeCorretora" required>
+            </div>
+            <div class="mb-4">
+                <label for="percentualComissao" class="block text-gray-700">Percentual de Comissão</label>
+                <input type="number" class="w-full p-2 border border-gray-300 rounded mt-1" id="percentualComissao" required>
+            </div>
+            <div class="mb-4">
+                <label for="grupoProducao" class="block text-gray-700">Grupo de Produção</label>
+                <input type="text" class="w-full p-2 border border-gray-300 rounded mt-1" id="grupoProducao" required>
+            </div>
+            <div class="mb-4">
+                <label for="Seguradora" class="block text-gray-700">Seguradora</label>
+                <select class="w-full p-2 border border-gray-300 rounded mt-1" id="produto" required>
+                    <option value="">Selecione a Seguradora</option>
+                    <option value="produto1">Allianz </option>
+                    <option value="produto2">Porto </option>
+                    <option value="produto3">Tokio </option>
+                </select>
+            </div>
+            <div class="mb-4">
+                <label for="produto" class="block text-gray-700">Produto</label>
+                <select class="w-full p-2 border border-gray-300 rounded mt-1" id="produto" required>
+                    <option value="">Selecione um produto</option>
+                    <option value="produto1">Automovel</option>
+                    <option value="produto2">Residencial</option>
+                    <option value="produto3">Empresarial</option>
+                    <option value="produto4">Transporte</option>
+                    <option value="produto5">Outros</option>
+                </select>
+            </div>
+            <div class="mb-4">
+                <label for="uploadProposta" class="block text-gray-700">Upload da Proposta</label>
+                <input type="file" class="w-full p-2 border border-gray-300 rounded mt-1" id="uploadProposta" accept="application/pdf" required>
+            </div>
+            <div class="flex justify-between">
+                <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded">Enviar</button>
+                <button type="button" id="processFile" class="bg-green-500 text-white px-4 py-2 rounded">Processar Arquivo</button>
+                <button type="button" id="exportExcel" class="bg-yellow-500 text-white px-4 py-2 rounded">Exportar para Excel</button>
+            </div>
+        </form>
+        <div id="extractedData" class="mt-10 hidden">
+            <h2 class="text-xl font-bold mb-4">Dados Extraídos do PDF</h2>
+            <p><strong>Nome:</strong> <span id="extractedNome"></span></p>
+            <p><strong>CPF / CNPJ:</strong> <span id="extractedCpfCnpj"></span></p>
+            <p><strong>Segurado ou Proponente:</strong> <span id="extractedSeguradoProponente"></span></p>
+            <p><strong>Outras Informações:</strong></p>
+            <pre id="extractedOtherInfo" class="bg-gray-100 p-2 rounded whitespace-pre-wrap"></pre>
+        </div>
+    </div>
+
+    <footer class="mt-10 p-5 bg-gray-200 text-center">
+        <p>Contato via WhatsApp: <a href="https://wa.me/551150784840" target="_blank" class="text-green-500"><i class="fab fa-whatsapp"></i> +55 (11) 5078-4840</a></p>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
+    <script>
+        document.getElementById('processFile').addEventListener('click', function() {
+            const fileInput = document.getElementById('uploadProposta');
+            const file = fileInput.files[0];
+
+            if (file && file.type === 'application/pdf') {
+                const reader = new FileReader();
+                reader.onload = function() {
+                    const typedarray = new Uint8Array(this.result);
+
+                    pdfjsLib.getDocument(typedarray).promise.then(function(pdf) {
+                        pdf.getPage(1).then(function(page) {
+                            page.getTextContent().then(function(textContent) {
+                                const textItems = textContent.items;
+                                let extractedText = '';
+
+                                for (let i = 0; i < textItems.length; i++) {
+                                    extractedText += textItems[i].str + '\n';
+                                }
+
+                                // Simulate extracting data from the text
+                                let extractedNome = extractedText.match(/Nome:\s*([\w\s]+)/i);
+                                let extractedCpfCnpj = extractedText.match(/CPF\/CNPJ:\s*([\d\.\-\/]+)/i);
+                                let extractedSeguradoProponente = extractedText.match(/Segurado\/Proponente:\s*([\w\s]+)/i);
+
+                                if (!extractedNome) {
+                                    extractedNome = extractedText.match(/Proponente \/ Segurado\(a\):\s*([\w\s]+)/i);
+                                }
+
+                                extractedNome = extractedNome ? extractedNome[1] : 'Não encontrado';
+                                extractedCpfCnpj = extractedCpfCnpj ? extractedCpfCnpj[1] : 'Não encontrado';
+                                extractedSeguradoProponente = extractedSeguradoProponente ? extractedSeguradoProponente[1] : 'Não encontrado';
+
+                                document.getElementById('extractedNome').innerText = extractedNome;
+                                document.getElementById('extractedCpfCnpj').innerText = extractedCpfCnpj;
+                                document.getElementById('extractedSeguradoProponente').innerText = extractedSeguradoProponente;
+                                document.getElementById('extractedOtherInfo').innerText = extractedText;
+
+                                document.getElementById('extractedData').classList.remove('hidden');
+                            });
+                        });
+                    });
+                };
+                reader.readAsArrayBuffer(file);
+            } else {
+                alert('Por favor, faça o upload de um arquivo PDF válido.');
+            }
+        });
+
+        document.getElementById('exportExcel').addEventListener('click', function() {
+            const nome = document.getElementById('extractedNome').innerText;
+            const cpfCnpj = document.getElementById('extractedCpfCnpj').innerText;
+            const seguradoProponente = document.getElementById('extractedSeguradoProponente').innerText;
+            const otherInfo = document.getElementById('extractedOtherInfo').innerText;
+
+            const wb = XLSX.utils.book_new();
+            const ws_data = [
+                ["Campo", "Valor"],
+                ["Nome", nome],
+                ["CPF / CNPJ", cpfCnpj],
+                ["Segurado ou Proponente", seguradoProponente],
+                ["Outras Informações", otherInfo]
+            ];
+            const ws = XLSX.utils.aoa_to_sheet(ws_data);
+            XLSX.utils.book_append_sheet(wb, ws, "Proposta em Excel");
+
+            XLSX.writeFile(wb, "propostasemexcel.xlsx");
+        });
+    </script>
+</body>
+</html>
